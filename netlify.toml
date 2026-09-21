@@ -1,0 +1,23 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Redirecionamento SPA para que rotas ou recarregamentos de página não dêem erro 404
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Otimização de cache para assets estáticos gerados pelo Vite (com hash)
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cabeçalhos de segurança recomendados
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
