@@ -1,0 +1,11 @@
+{
+  "remoteName": "origin",
+  "projects": [
+    {
+      "id": "prj_UzR8vpHepqcd5T2ItCfUeyZJYzZp",
+      "name": "duotec-site",
+      "directory": ".",
+      "orgId": "team_pJHZRCaPDCluFWhKTgNd6uBj"
+    }
+  ]
+}
