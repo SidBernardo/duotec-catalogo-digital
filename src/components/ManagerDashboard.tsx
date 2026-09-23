@@ -102,6 +102,9 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
   const [editProductImage, setEditProductImage] = useState('');
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
 
+  // Estado para confirmação de eliminação de produto
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+
   // Estado para cadastro de nova categoria / família
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [newCatName, setNewCatName] = useState('');
@@ -340,6 +343,18 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
   const handleSavePrice = (product: Product) => {
     onUpdateProduct({ ...product, price: Math.max(100, tempPrice) });
     setEditingPriceId(null);
+  };
+
+  const handleRequestDelete = (product: Product, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setProductToDelete(product);
+  };
+
+  const handleConfirmDelete = () => {
+    if (productToDelete) {
+      onDeleteProduct(productToDelete.id);
+      setProductToDelete(null);
+    }
   };
 
   const handleStockSelectChange = (product: Product, value: string) => {
@@ -706,8 +721,8 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteProduct(product.id)}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600"
+                            onClick={() => handleRequestDelete(product)}
+                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                             title="Eliminar produto"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -879,7 +894,7 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
                               </button>
                               <button
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); onDeleteProduct(product.id); }}
+                                onClick={(e) => handleRequestDelete(product, e)}
                                 className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                                 title="Eliminar produto do catálogo"
                               >
@@ -2161,20 +2176,35 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-2 flex items-center justify-between gap-2">
                 <button
                   type="button"
-                  onClick={() => setEditingProduct(null)}
-                  className="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 text-xs font-bold"
+                  onClick={() => {
+                    const prod = editingProduct;
+                    setEditingProduct(null);
+                    handleRequestDelete(prod);
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Eliminar este componente"
                 >
-                  Cancelar
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Eliminar</span>
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs"
-                >
-                  Guardar Alterações
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct(null)}
+                    className="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 text-xs font-bold cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+                  >
+                    Guardar Alterações
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -2503,6 +2533,74 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação para Eliminar Produto */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-sm sm:max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            {/* Ícone de Alerta e Cabeçalho */}
+            <div className="flex flex-col items-center text-center">
+              <div className="w-13 h-13 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-3 ring-8 ring-red-50">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                Eliminar Produto do Catálogo?
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-xs leading-relaxed">
+                Esta ação é irreversível. O produto será removido permanentemente do catálogo e da base de dados Supabase.
+              </p>
+            </div>
+
+            {/* Cartão de Resumo do Produto Selecionado */}
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-white border border-slate-200 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+                <img
+                  src={resolveComponentImage(productToDelete.name, productToDelete.category, productToDelete.image)}
+                  alt={productToDelete.name}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80';
+                  }}
+                />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-xs font-bold text-slate-900 truncate">
+                  {productToDelete.name}
+                </p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[11px] text-slate-500 font-medium truncate max-w-[130px]">
+                    {productToDelete.categoryName || productToDelete.category}
+                  </span>
+                  <span className="text-slate-300 shrink-0">•</span>
+                  <span className="text-[11px] font-bold text-blue-600 shrink-0">
+                    {formatPrice(productToDelete.price, siteConfig.currencySymbol, siteConfig.currencyPosition)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Botões de Ação */}
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                className="w-full py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xs cursor-pointer transition-all active:scale-[0.98]"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs shadow-md shadow-red-600/20 cursor-pointer flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Sim, Eliminar
+              </button>
+            </div>
           </div>
         </div>
       )}
