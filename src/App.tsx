@@ -22,6 +22,21 @@ import { ManagerDashboard } from './components/ManagerDashboard';
 import { MessageCircle, ShoppingBag, ArrowUp } from 'lucide-react';
 import { formatKzCompact } from './utils/formatters';
 import { resolveComponentImage } from './data/componentImages';
+import {
+  fetchProductsFromDb,
+  upsertProductInDb,
+  deleteProductFromDb,
+  batchInsertProducts,
+  fetchCategoriesFromDb,
+  upsertCategoryInDb,
+  deleteCategoryFromDb,
+  batchInsertCategories,
+  fetchOrdersFromDb,
+  insertOrderInDb,
+  updateOrderStatusInDb,
+  fetchSiteConfigFromDb,
+  upsertSiteConfigInDb,
+} from './lib/supabase';
 
 const CART_STORAGE_KEY = 'duotec_cart_v2';
 const CUSTOMER_STORAGE_KEY = 'duotec_customer_v2';
@@ -133,6 +148,57 @@ export default function App() {
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'name'>('featured');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Sincronização inicial com o Supabase
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDataFromSupabase() {
+      try {
+        // 1. Produtos
+        const dbProducts = await fetchProductsFromDb();
+        if (isMounted) {
+          if (dbProducts && dbProducts.length > 0) {
+            setProducts(dbProducts);
+          } else {
+            // Se a base de dados estiver vazia, sincroniza o catálogo completo para o Supabase
+            console.log('Sincronizando catálogo inicial com a base de dados...');
+            await batchInsertProducts(PRODUCTS);
+          }
+        }
+
+        // 2. Categorias
+        const dbCategories = await fetchCategoriesFromDb();
+        if (isMounted) {
+          if (dbCategories && dbCategories.length > 0) {
+            setCategories(dbCategories);
+          } else {
+            await batchInsertCategories(CATEGORIES_LIST);
+          }
+        }
+
+        // 3. Encomendas
+        const dbOrders = await fetchOrdersFromDb();
+        if (isMounted && dbOrders && dbOrders.length > 0) {
+          setOrders(dbOrders);
+        }
+
+        // 4. Configurações do Site
+        const dbConfig = await fetchSiteConfigFromDb();
+        if (isMounted && dbConfig) {
+          setSiteConfig((prev) => ({ ...prev, ...dbConfig }));
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar dados do Supabase:', err);
+      }
+    }
+
+    loadDataFromSupabase();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Guardar dados no localStorage
   useEffect(() => {
@@ -306,6 +372,7 @@ export default function App() {
 
   const handleSaveOrder = (newOrder: OrderRecord) => {
     setOrders((prev) => [newOrder, ...prev]);
+    insertOrderInDb(newOrder).catch((err) => console.error('Erro ao guardar encomenda na base de dados:', err));
   };
 
   // Handlers do Gestor (Produtos e Pedidos)
@@ -313,18 +380,21 @@ export default function App() {
     setProducts((prev) =>
       prev.map((p) => (p.id === updated.id ? updated : p))
     );
+    upsertProductInDb(updated).catch((err) => console.error('Erro ao atualizar produto na base de dados:', err));
     setToastMessage(`Produto atualizado: ${updated.name}`);
     setTimeout(() => setToastMessage(null), 2500);
   };
 
   const handleAddProduct = (newProduct: Product) => {
     setProducts((prev) => [newProduct, ...prev]);
+    upsertProductInDb(newProduct).catch((err) => console.error('Erro ao adicionar produto na base de dados:', err));
     setToastMessage(`Novo componente adicionado: ${newProduct.name}`);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleDeleteProduct = (productId: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== productId));
+    deleteProductFromDb(productId).catch((err) => console.error('Erro ao remover produto da base de dados:', err));
     setToastMessage('Componente removido do catálogo');
     setTimeout(() => setToastMessage(null), 2500);
   };
@@ -333,20 +403,24 @@ export default function App() {
     setOrders((prev) =>
       prev.map((ord) => (ord.id === orderId ? { ...ord, status } : ord))
     );
+    updateOrderStatusInDb(orderId, status).catch((err) => console.error('Erro ao atualizar estado da encomenda na base de dados:', err));
   };
 
   const handleUpdateSiteConfig = (newConfig: SiteConfig) => {
     setSiteConfig(newConfig);
+    upsertSiteConfigInDb(newConfig).catch((err) => console.error('Erro ao guardar configurações na base de dados:', err));
     setToastMessage('Configurações da loja atualizadas com sucesso!');
     setTimeout(() => setToastMessage(null), 2500);
   };
 
   const handleResetSiteConfig = () => {
-    setSiteConfig((prev) => ({
+    const updated = {
       ...DEFAULT_SITE_CONFIG,
-      managerUsername: prev.managerUsername,
-      managerPassword: prev.managerPassword,
-    }));
+      managerUsername: siteConfig.managerUsername,
+      managerPassword: siteConfig.managerPassword,
+    };
+    setSiteConfig(updated);
+    upsertSiteConfigInDb(updated).catch((err) => console.error('Erro ao guardar configurações:', err));
     setToastMessage('Configurações restauradas para o padrão oficial (credenciais mantidas).');
     setTimeout(() => setToastMessage(null), 2500);
   };
@@ -359,6 +433,7 @@ export default function App() {
       }
       return [...prev, newCat];
     });
+    upsertCategoryInDb(newCat).catch((err) => console.error('Erro ao salvar categoria na base de dados:', err));
     setToastMessage(`Família "${newCat.name}" adicionada com sucesso!`);
     setTimeout(() => setToastMessage(null), 3000);
   };
@@ -366,6 +441,7 @@ export default function App() {
   const handleDeleteCategory = (catId: string) => {
     if (catId === 'todos') return;
     setCategories((prev) => prev.filter((c) => c.id !== catId));
+    deleteCategoryFromDb(catId).catch((err) => console.error('Erro ao remover categoria da base de dados:', err));
     setToastMessage('Família removida.');
     setTimeout(() => setToastMessage(null), 2500);
   };
