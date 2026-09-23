@@ -150,26 +150,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             /* Já está no carrinho: permite aumentar/diminuir imediatamente */
             <div
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-0.5 text-xs"
+              className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-0.5 text-xs w-full"
             >
               <button
                 type="button"
                 onClick={handleDecrement}
-                className="w-6 h-6 rounded bg-white hover:bg-blue-100 text-blue-700 font-black flex items-center justify-center transition-colors cursor-pointer"
+                className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-white hover:bg-blue-100 text-blue-700 font-black flex items-center justify-center transition-colors cursor-pointer shrink-0"
                 title="Diminuir quantidade"
                 aria-label="Diminuir"
               >
                 <Minus className="w-3 h-3 stroke-[2.5]" />
               </button>
 
-              <span className="font-black text-blue-900 text-[11px] px-1">
+              <span className="font-black text-blue-900 text-[10px] sm:text-[11px] px-1 truncate text-center">
                 {currentQuantityInCart} un
               </span>
 
               <button
                 type="button"
                 onClick={handleIncrement}
-                className="w-6 h-6 rounded bg-blue-600 hover:bg-blue-700 text-white font-black flex items-center justify-center transition-colors cursor-pointer"
+                className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-blue-600 hover:bg-blue-700 text-white font-black flex items-center justify-center transition-colors cursor-pointer shrink-0"
                 title="Aumentar quantidade"
                 aria-label="Aumentar"
               >
@@ -180,26 +180,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             /* Ainda não está no carrinho: selector de quantidade + botão Adicionar */
             <div
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 w-full"
             >
               {/* Controlo de Quantidade a Comprar */}
-              <div className="flex items-center bg-slate-100 border border-slate-200 rounded-md p-0.5">
+              <div className="flex items-center bg-slate-100 border border-slate-200 rounded-md p-0.5 shrink-0">
                 <button
                   type="button"
                   onClick={handleDecrement}
-                  className="w-5 h-5 rounded hover:bg-white text-slate-600 font-bold flex items-center justify-center transition-colors cursor-pointer"
+                  className="w-4 h-4 sm:w-5 sm:h-5 rounded hover:bg-white text-slate-600 font-bold flex items-center justify-center transition-colors cursor-pointer"
                   title="Menos"
                   aria-label="Menos"
                 >
                   <Minus className="w-2.5 h-2.5" />
                 </button>
-                <span className="w-5 text-center font-bold text-slate-800 text-[11px]">
+                <span className="w-4 sm:w-5 text-center font-bold text-slate-800 text-[10px] sm:text-[11px]">
                   {selectedQty}
                 </span>
                 <button
                   type="button"
                   onClick={handleIncrement}
-                  className="w-5 h-5 rounded hover:bg-white text-slate-600 font-bold flex items-center justify-center transition-colors cursor-pointer"
+                  className="w-4 h-4 sm:w-5 sm:h-5 rounded hover:bg-white text-slate-600 font-bold flex items-center justify-center transition-colors cursor-pointer"
                   title="Mais"
                   aria-label="Mais"
                 >
@@ -212,7 +212,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 type="button"
                 id={`btn-adicionar-${product.id}`}
                 onClick={handleAddClick}
-                className={`flex-1 py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs ${
+                className={`flex-1 min-w-0 py-1 px-1 sm:px-2 rounded-md text-[10px] sm:text-[11px] font-bold transition-all flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer shadow-2xs truncate ${
                   isJustAdded
                     ? 'bg-emerald-600 text-white'
                     : 'bg-blue-600 hover:bg-blue-700 text-white active:scale-95'
@@ -221,11 +221,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               >
                 {isJustAdded ? (
                   <>
-                    <Check className="w-3 h-3 stroke-[3]" />
+                    <Check className="w-3 h-3 stroke-[3] shrink-0" />
                     <span className="text-[10px]">Pronto</span>
                   </>
                 ) : (
-                  <span>Adicionar</span>
+                  <>
+                    <Plus className="w-3 h-3 sm:hidden shrink-0" />
+                    <span className="truncate">Adicionar</span>
+                  </>
                 )}
               </button>
             </div>

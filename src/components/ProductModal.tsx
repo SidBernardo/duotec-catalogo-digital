@@ -39,25 +39,25 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-6 overflow-y-auto bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-200">
       <div
         id="product-detail-modal"
-        className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col my-6 max-h-[92vh]"
+        className="relative w-full max-w-2xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col my-auto max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           id="close-product-modal-btn"
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/95 text-slate-700 hover:bg-slate-100 hover:text-slate-950 border border-slate-200 transition-colors cursor-pointer shadow-xs"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-1.5 sm:p-2 rounded-full bg-white/95 text-slate-700 hover:bg-slate-100 hover:text-slate-950 border border-slate-200 transition-colors cursor-pointer shadow-xs"
           aria-label="Fechar"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
-        <div className="overflow-y-auto flex-1 p-5 sm:p-8 space-y-6">
+        <div className="overflow-y-auto flex-1 p-4 sm:p-8 space-y-4 sm:space-y-6">
           {/* Header info */}
-          <div className="flex flex-col sm:flex-row gap-5 sm:gap-6">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
             <div className="w-full sm:w-1/2 aspect-square max-h-64 rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/70 border border-slate-200 flex-shrink-0 flex items-center justify-center p-4">
               {!imgError ? (
                 <img

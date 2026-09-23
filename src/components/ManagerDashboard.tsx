@@ -400,36 +400,37 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
     <div className="min-h-screen bg-slate-100 flex flex-col">
       {/* Barra de Navegação do Gestor */}
       <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <Logo size="sm" variant="light" />
-            <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-indigo-900/80 text-indigo-200 text-[11px] font-bold border border-indigo-700/50">
+            <span className="hidden md:inline-block px-2.5 py-0.5 rounded-full bg-indigo-900/80 text-indigo-200 text-[11px] font-bold border border-indigo-700/50">
               Painel de Gestão
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 text-[11px] font-semibold border border-emerald-700/60 shadow-xs" title="Conectado ao Supabase">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Base de Dados Online
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 text-[10px] sm:text-[11px] font-semibold border border-emerald-700/60 shadow-xs" title="Conectado ao Supabase">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="hidden sm:inline">Base de Dados </span>Online
             </span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             <button
               type="button"
               onClick={onSwitchToClient}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+              className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
             >
-              <Store className="w-3.5 h-3.5" />
-              <span>Ver Loja do Cliente</span>
+              <Store className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Ver Loja do Cliente</span>
+              <span className="sm:hidden text-[11px]">Ver Loja</span>
             </button>
 
             <button
               type="button"
               onClick={onLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-colors cursor-pointer border border-slate-700"
+              className="flex items-center gap-1 px-2 py-1.5 sm:px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-colors cursor-pointer border border-slate-700"
               title="Sair da sessão de gestor"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Terminar Sessão</span>
+              <LogOut className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">Terminar Sessão</span>
             </button>
           </div>
         </div>
@@ -521,7 +522,7 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('config')}
-            className={`text-left p-4 rounded-xl border transition-all cursor-pointer ${
+            className={`text-left p-4 rounded-xl border transition-all cursor-pointer col-span-2 sm:col-span-1 ${
               activeTab === 'config'
                 ? 'bg-blue-50/70 border-blue-400 ring-2 ring-blue-500/20 shadow-xs'
                 : 'bg-white border-slate-200 shadow-2xs hover:border-blue-300 hover:shadow-xs'
@@ -594,8 +595,133 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
               </button>
             </div>
 
-            {/* Tabela de Produtos para o Gestor */}
-            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            {/* Vista em Cartões para Telemóvel (Sem Rolagem Horizontal Quebrada) */}
+            <div className="md:hidden space-y-2.5">
+              {filteredProducts.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-xs">
+                  Nenhum componente encontrado com os filtros selecionados.
+                </div>
+              ) : (
+                filteredProducts.map((product) => {
+                  const productImgUrl = resolveComponentImage(product.name, product.category, product.image);
+                  const isEditingPrice = editingPriceId === product.id;
+
+                  return (
+                    <div
+                      key={`mob-${product.id}`}
+                      className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2.5 shadow-2xs"
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-12 h-12 rounded-lg border border-slate-200 bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+                          <img
+                            src={productImgUrl}
+                            alt={product.name}
+                            className={`max-h-full max-w-full object-contain ${!product.inStock ? 'grayscale opacity-60' : ''}`}
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 uppercase truncate max-w-[120px]">
+                              {product.categoryName}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-medium">
+                              {product.brand}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-slate-900 text-xs leading-snug mt-0.5">
+                            {product.name}
+                          </h4>
+                          <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                            {product.shortDescription}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Linha de Preço, Stock e Ações Rápidas */}
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-200/80 gap-2">
+                        {/* Preço com edição rápida */}
+                        <div className="flex items-center gap-1">
+                          {isEditingPrice ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                value={tempPrice}
+                                onChange={(e) => setTempPrice(Number(e.target.value))}
+                                className="w-20 px-1.5 py-0.5 text-xs border border-blue-500 rounded font-bold bg-white"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSavePrice(product)}
+                                className="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold"
+                              >
+                                OK
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingPriceId(null)}
+                                className="px-1 py-0.5 text-slate-400 text-[10px]"
+                              >
+                                X
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditPrice(product)}
+                              className="flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-slate-200 hover:border-blue-400 text-xs font-black text-blue-950"
+                              title="Tocar para editar preço"
+                            >
+                              <span>{formatPrice(product.price, siteConfig)}</span>
+                              <Edit2 className="w-2.5 h-2.5 text-slate-400" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Seletor de Stock */}
+                        <select
+                          value={product.inStock ? 'em_stock' : 'esgotado'}
+                          onChange={(e) => handleStockSelectChange(product, e.target.value)}
+                          className={`text-[11px] font-bold px-2 py-1 rounded-lg border cursor-pointer ${
+                            product.inStock
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : 'bg-rose-50 text-rose-800 border-rose-300'
+                          }`}
+                        >
+                          <option value="em_stock">🟢 Em stock</option>
+                          <option value="esgotado">🔴 Esgotado</option>
+                        </select>
+
+                        {/* Botões de Ação */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditProduct(product)}
+                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-blue-600"
+                            title="Editar completo"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600"
+                            title="Eliminar produto"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Tabela de Produtos para Desktop */}
+            <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50 text-slate-600 text-[10px] uppercase font-bold border-b border-slate-200">

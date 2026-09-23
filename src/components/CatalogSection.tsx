@@ -132,9 +132,9 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
           </div>
         </div>
 
-        {/* Filtros de Categorias */}
+        {/* Filtros de Categorias com Rolagem Suave no Telemóvel */}
         <div className="mb-3 space-y-2">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar px-0.5 -mx-1">
             {categories.map((cat) => {
               const isSelected = selectedCategory === cat.id;
               const count =
@@ -147,15 +147,15 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                   key={cat.id}
                   id={`cat-filtro-${cat.id}`}
                   onClick={() => onSelectCategory(cat.id as ProductCategory)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                  className={`px-2.5 py-1.5 sm:py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                     isSelected
-                      ? 'bg-blue-600 text-white shadow-2xs font-bold'
+                      ? 'bg-blue-600 text-white shadow-2xs font-bold ring-2 ring-blue-500/20'
                       : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                   }`}
                 >
                   <span>{cat.name}</span>
                   <span
-                    className={`text-[9px] px-1.5 py-0.2 rounded-full ${
+                    className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
                       isSelected ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-500'
                     }`}
                   >

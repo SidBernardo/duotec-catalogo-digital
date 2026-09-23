@@ -111,7 +111,7 @@ export const Logo: React.FC<LogoProps> = ({
         </div>
         {showTagline && (
           <span
-            className={`text-[8.5px] font-bold tracking-widest uppercase mt-0.5 ${
+            className={`hidden sm:block text-[8.5px] font-bold tracking-widest uppercase mt-0.5 ${
               isLight ? 'text-blue-200' : 'text-slate-500'
             }`}
           >
