@@ -38,6 +38,8 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
   enableStorePickup: true,
   whatsappGreeting: 'Olá DUOTEC! Gostaria de encomendar os seguintes componentes do catálogo:',
   ibanMCX: 'AO06.0040.0000.1234.5678.9012.3',
+  managerUsername: 'admin',
+  managerPassword: 'duotec2026',
 };
 
 export const DEFAULT_CATEGORIES_LIST: CategoryItem[] = [

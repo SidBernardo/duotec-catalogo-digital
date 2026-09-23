@@ -306,6 +306,7 @@ export default function App() {
       } catch (e) {
         console.warn('Erro ao guardar credenciais:', e);
       }
+      upsertSiteConfigInDb(updated).catch((err) => console.error('Erro ao guardar credenciais no Supabase:', err));
       return updated;
     });
     setToastMessage('Credenciais de gestor configuradas com sucesso!');

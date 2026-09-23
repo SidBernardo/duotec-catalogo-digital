@@ -406,6 +406,10 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
             <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-indigo-900/80 text-indigo-200 text-[11px] font-bold border border-indigo-700/50">
               Painel de Gestão
             </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 text-[11px] font-semibold border border-emerald-700/60 shadow-xs" title="Conectado ao Supabase">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Base de Dados Online
+            </span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">

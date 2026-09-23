@@ -327,6 +327,8 @@ export async function fetchSiteConfigFromDb(): Promise<Partial<SiteConfig> | nul
       whatsappNumber: data.whatsapp_number || undefined,
       companyName: data.company_name || undefined,
       deliveryFeeStandard: data.delivery_fee ? Number(data.delivery_fee) : undefined,
+      managerUsername: (data as any).manager_username || undefined,
+      managerPassword: (data as any).manager_password || undefined,
     };
   } catch (err) {
     console.error('Falha ao carregar site_config do Supabase:', err);
@@ -336,16 +338,27 @@ export async function fetchSiteConfigFromDb(): Promise<Partial<SiteConfig> | nul
 
 export async function upsertSiteConfigInDb(config: SiteConfig): Promise<boolean> {
   try {
-    const row = {
+    const row: any = {
       id: 'default',
       currency_symbol: config.currencySymbol,
       whatsapp_number: config.whatsappNumber,
       company_name: config.companyName,
       delivery_fee: config.deliveryFeeStandard,
     };
+    if (config.managerUsername) row.manager_username = config.managerUsername;
+    if (config.managerPassword) row.manager_password = config.managerPassword;
+
     const { error } = await supabase.from('site_config').upsert([row]);
     if (error) {
-      console.error('Erro ao guardar configurações:', error);
+      // Se der erro por ausência das colunas de credenciais, salva os restantes dados
+      const fallbackRow = {
+        id: 'default',
+        currency_symbol: config.currencySymbol,
+        whatsapp_number: config.whatsappNumber,
+        company_name: config.companyName,
+        delivery_fee: config.deliveryFeeStandard,
+      };
+      await supabase.from('site_config').upsert([fallbackRow]);
       return false;
     }
     return true;
