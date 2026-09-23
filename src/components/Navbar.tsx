@@ -31,7 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const phoneDisplay = siteConfig?.phoneFormatted || COMPANY_INFO.phoneFormatted;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-18 gap-2 sm:gap-6">
           

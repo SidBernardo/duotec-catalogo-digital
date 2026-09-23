@@ -399,7 +399,7 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
       {/* Barra de Navegação do Gestor */}
-      <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+      <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50 shadow-md">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <Logo size="sm" variant="light" />
