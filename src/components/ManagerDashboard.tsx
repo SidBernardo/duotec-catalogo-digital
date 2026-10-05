@@ -5,6 +5,8 @@ import { formatPrice } from '../utils/formatters';
 import { COMPANY_INFO, CATEGORIES_LIST } from '../data/company';
 import { SiteSettingsPanel } from './SiteSettingsPanel';
 import { resolveComponentImage } from '../data/componentImages';
+import { compressImageFile } from '../utils/imageOptimizer';
+import { uploadProductImageToStorage } from '../lib/supabase';
 import {
   Package,
   ShoppingBag,
@@ -46,6 +48,7 @@ import {
   CalendarDays,
   List,
   LayoutGrid,
+  Loader2,
 } from 'lucide-react';
 
 interface ManagerDashboardProps {
@@ -124,6 +127,7 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
   const [newProductBrand, setNewProductBrand] = useState('DUOTEC');
   const [newProductImage, setNewProductImage] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [newProductDesc, setNewProductDesc] = useState('');
   const [newProductSpecs, setNewProductSpecs] = useState('');
 
@@ -327,16 +331,26 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
     setEditingProduct(null);
   };
 
-  const handleEditImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setEditProductImage(result);
-        setEditImagePreview(result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        setIsUploadingImage(true);
+        // Comprime no browser para evitar payload pesado
+        const { dataUrl, blob } = await compressImageFile(file, 800, 800, 0.82);
+        setEditProductImage(dataUrl);
+        setEditImagePreview(dataUrl);
+
+        // Envia para o Supabase Storage se disponível
+        const storageUrl = await uploadProductImageToStorage(blob, editingProduct?.id || 'prod_edit');
+        if (storageUrl) {
+          setEditProductImage(storageUrl);
+        }
+      } catch (err) {
+        console.error('Erro ao processar imagem:', err);
+      } finally {
+        setIsUploadingImage(false);
+      }
     }
   };
 
@@ -366,16 +380,26 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
     });
   };
 
-  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setNewProductImage(result);
-        setImagePreview(result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        setIsUploadingImage(true);
+        // Otimizar imagem (reduz de 5-10MB para ~30-50KB)
+        const { dataUrl, blob } = await compressImageFile(file, 800, 800, 0.82);
+        setNewProductImage(dataUrl);
+        setImagePreview(dataUrl);
+
+        // Tentar enviar diretamente para o Supabase Storage
+        const storageUrl = await uploadProductImageToStorage(blob, 'prod_novo');
+        if (storageUrl) {
+          setNewProductImage(storageUrl);
+        }
+      } catch (err) {
+        console.error('Erro ao processar imagem:', err);
+      } finally {
+        setIsUploadingImage(false);
+      }
     }
   };
 
@@ -2140,9 +2164,18 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
                   </div>
                 )}
                 <label className="flex items-center justify-center gap-2 p-2.5 border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-lg bg-white hover:bg-blue-50/50 cursor-pointer transition-colors text-slate-600 hover:text-blue-600">
-                  <Upload className="w-4 h-4" />
-                  <span className="text-xs font-semibold">Carregar nova foto</span>
-                  <input type="file" accept="image/*" onChange={handleEditImageUpload} className="hidden" />
+                  {isUploadingImage ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                      <span className="text-xs font-semibold text-blue-600">A optimizar foto...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      <span className="text-xs font-semibold">Carregar nova foto</span>
+                    </>
+                  )}
+                  <input type="file" accept="image/*" onChange={handleEditImageUpload} disabled={isUploadingImage} className="hidden" />
                 </label>
                 <input
                   type="url"
@@ -2338,12 +2371,22 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
                   <div className="space-y-2">
                     {/* Botão de Upload de Ficheiro do Computador/Telemóvel */}
                     <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-lg bg-white hover:bg-blue-50/50 cursor-pointer transition-colors text-slate-600 hover:text-blue-600">
-                      <Upload className="w-4 h-4" />
-                      <span className="text-xs font-semibold">Carregar foto do dispositivo</span>
+                      {isUploadingImage ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                          <span className="text-xs font-semibold text-blue-600">A optimizar e guardar foto...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          <span className="text-xs font-semibold">Carregar foto do dispositivo</span>
+                        </>
+                      )}
                       <input
                         type="file"
                         accept="image/*"
                         onChange={handleImageFileUpload}
+                        disabled={isUploadingImage}
                         className="hidden"
                       />
                     </label>
@@ -2577,7 +2620,7 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
                   </span>
                   <span className="text-slate-300 shrink-0">•</span>
                   <span className="text-[11px] font-bold text-blue-600 shrink-0">
-                    {formatPrice(productToDelete.price, siteConfig.currencySymbol, siteConfig.currencyPosition)}
+                    {formatPrice(productToDelete.price, siteConfig)}
                   </span>
                 </div>
               </div>

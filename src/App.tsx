@@ -377,18 +377,36 @@ export default function App() {
   };
 
   // Handlers do Gestor (Produtos e Pedidos)
-  const handleUpdateProduct = (updated: Product) => {
+  const handleUpdateProduct = async (updated: Product) => {
     setProducts((prev) =>
       prev.map((p) => (p.id === updated.id ? updated : p))
     );
-    upsertProductInDb(updated).catch((err) => console.error('Erro ao atualizar produto na base de dados:', err));
+    try {
+      const saved = await upsertProductInDb(updated);
+      if (saved && saved.image && saved.image !== updated.image) {
+        setProducts((prev) =>
+          prev.map((p) => (p.id === updated.id ? saved : p))
+        );
+      }
+    } catch (err) {
+      console.error('Erro ao atualizar produto na base de dados:', err);
+    }
     setToastMessage(`Produto atualizado: ${updated.name}`);
     setTimeout(() => setToastMessage(null), 2500);
   };
 
-  const handleAddProduct = (newProduct: Product) => {
+  const handleAddProduct = async (newProduct: Product) => {
     setProducts((prev) => [newProduct, ...prev]);
-    upsertProductInDb(newProduct).catch((err) => console.error('Erro ao adicionar produto na base de dados:', err));
+    try {
+      const saved = await upsertProductInDb(newProduct);
+      if (saved && saved.image && saved.image !== newProduct.image) {
+        setProducts((prev) =>
+          prev.map((p) => (p.id === newProduct.id ? saved : p))
+        );
+      }
+    } catch (err) {
+      console.error('Erro ao adicionar produto na base de dados:', err);
+    }
     setToastMessage(`Novo componente adicionado: ${newProduct.name}`);
     setTimeout(() => setToastMessage(null), 3000);
   };

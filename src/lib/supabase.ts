@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { Product, CategoryItem, OrderRecord, SiteConfig } from '../types';
 import { resolveComponentImage } from '../data/componentImages';
+import { dataUrlToBlob } from '../utils/imageOptimizer';
 
 // As credenciais são obtidas das variáveis de ambiente Vite (ou utilizam as pré-configuradas)
 const SUPABASE_URL =
@@ -9,6 +10,70 @@ const SUPABASE_ANON_KEY =
   import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_z6dMabj3w1D9CAK5K2QWQw_FiDGEiLM';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/**
+ * Faz o upload de uma imagem (Blob, File ou Data URL Base64) para o Supabase Storage.
+ * Retorna o URL público da imagem guardada, ou null se não conseguir comunicar com o Storage.
+ */
+export async function uploadProductImageToStorage(
+  fileOrBlobOrDataUrl: Blob | File | string,
+  fileNamePrefix: string = 'prod'
+): Promise<string | null> {
+  try {
+    let blob: Blob;
+
+    if (typeof fileOrBlobOrDataUrl === 'string') {
+      if (fileOrBlobOrDataUrl.startsWith('http://') || fileOrBlobOrDataUrl.startsWith('https://')) {
+        // Já é um URL web público
+        return fileOrBlobOrDataUrl;
+      }
+      if (fileOrBlobOrDataUrl.startsWith('data:image/')) {
+        blob = dataUrlToBlob(fileOrBlobOrDataUrl);
+      } else {
+        return null;
+      }
+    } else {
+      blob = fileOrBlobOrDataUrl;
+    }
+
+    const mime = blob.type || 'image/jpeg';
+    const ext = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
+    const cleanPrefix = fileNamePrefix.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
+    const filePath = `products/${cleanPrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+
+    // Tentar nos buckets comuns ('product-images', 'products', 'images')
+    const bucketsToTry = ['product-images', 'products', 'images'];
+
+    for (const bucket of bucketsToTry) {
+      try {
+        const { data, error } = await supabase.storage
+          .from(bucket)
+          .upload(filePath, blob, {
+            cacheControl: '31536000',
+            upsert: true,
+            contentType: mime,
+          });
+
+        if (!error && data?.path) {
+          const { data: pubData } = supabase.storage.from(bucket).getPublicUrl(data.path);
+          if (pubData?.publicUrl) {
+            console.log(`[Supabase Storage] Imagem guardada no bucket '${bucket}':`, pubData.publicUrl);
+            return pubData.publicUrl;
+          }
+        } else if (error) {
+          console.warn(`[Supabase Storage] Aviso no bucket '${bucket}':`, error.message);
+        }
+      } catch (bucketErr) {
+        console.warn(`[Supabase Storage] Falha ao aceder ao bucket '${bucket}':`, bucketErr);
+      }
+    }
+
+    return null;
+  } catch (err) {
+    console.warn('[Supabase Storage] Falha ao processar upload:', err);
+    return null;
+  }
+}
 
 /**
  * Converte um registo da tabela 'products' do Supabase para o tipo 'Product' da aplicação
@@ -52,8 +117,8 @@ export function mapProductToRow(p: Product) {
   if (p.warranty) tags.push(`warranty:${p.warranty}`);
   if (p.categoryName) tags.push(`catName:${p.categoryName}`);
 
-  // Se a imagem for um base64 enorme ou blob local, manter ou guardar
-  const imageToStore = typeof p.image === 'string' && p.image.length < 5000 ? p.image : '';
+  // Se a imagem for um URL público ou imagem comprimida, mantê-la sem apagar arbitrariamente
+  const imageToStore = typeof p.image === 'string' ? p.image : '';
 
   return {
     id: p.id,
@@ -96,18 +161,32 @@ export async function fetchProductsFromDb(): Promise<Product[]> {
   }
 }
 
-export async function upsertProductInDb(product: Product): Promise<boolean> {
+export async function upsertProductInDb(product: Product): Promise<Product | null> {
   try {
-    const row = mapProductToRow(product);
+    let finalProduct = { ...product };
+
+    // Se a imagem for dataUrl (base64) e ainda não foi feito upload para o Supabase Storage, tenta carregar
+    if (finalProduct.image && finalProduct.image.startsWith('data:image/')) {
+      try {
+        const storageUrl = await uploadProductImageToStorage(finalProduct.image, finalProduct.id || 'prod');
+        if (storageUrl) {
+          finalProduct.image = storageUrl;
+        }
+      } catch (uploadErr) {
+        console.warn('Erro ao enviar imagem para o Storage, a guardar versão directa:', uploadErr);
+      }
+    }
+
+    const row = mapProductToRow(finalProduct);
     const { error } = await supabase.from('products').upsert([row]);
     if (error) {
       console.error('Erro ao guardar produto no Supabase:', error);
-      return false;
+      return null;
     }
-    return true;
+    return finalProduct;
   } catch (err) {
     console.error('Falha ao sincronizar produto:', err);
-    return false;
+    return null;
   }
 }
 

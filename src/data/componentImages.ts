@@ -669,8 +669,12 @@ export const wireSpoolSvg = createSvgDataUri(`
 
 // Mapeamento Definitivo e Autêntico para cada Componente do Catálogo DUOTEC
 export function resolveComponentImage(productName: string, categoryId?: string, currentImage?: string): string {
-  // Se o utilizador carregou uma imagem personalizada (base64 ou URL externa direta), mantê-la!
-  if (currentImage && (currentImage.startsWith('data:image/') || currentImage.startsWith('http://') || currentImage.startsWith('https://'))) {
+  // Se o utilizador carregou uma imagem personalizada (base64 válido ou URL externa direta/Storage), mantê-la!
+  if (currentImage && (
+    (currentImage.startsWith('data:image/') && currentImage.length > 50) ||
+    currentImage.startsWith('http://') ||
+    currentImage.startsWith('https://')
+  )) {
     if (!currentImage.includes('svg+xml')) {
       return currentImage;
     }
