@@ -45,15 +45,55 @@ const ORDERS_STORAGE_KEY = 'duotec_orders_v2';
 const ROLE_CHOSEN_KEY = 'duotec_role_chosen_v2';
 const SITE_CONFIG_STORAGE_KEY = 'duotec_site_config_v2';
 const CATEGORIES_STORAGE_KEY = 'duotec_categories_v2';
+const MANAGER_SESSION_KEY = 'duotec_manager_session_v2';
+const MANAGER_SESSION_DURATION = 5 * 60 * 1000; // 5 minutos
+
+function isManagerSessionValid(): boolean {
+  try {
+    const raw = localStorage.getItem(MANAGER_SESSION_KEY);
+    if (!raw) return false;
+    const session = JSON.parse(raw);
+    if (session && typeof session.expiresAt === 'number') {
+      return Date.now() < session.expiresAt;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return false;
+}
+
+function setManagerSession(): void {
+  try {
+    const session = {
+      expiresAt: Date.now() + MANAGER_SESSION_DURATION,
+    };
+    localStorage.setItem(MANAGER_SESSION_KEY, JSON.stringify(session));
+  } catch (e) {
+    // ignore
+  }
+}
+
+function clearManagerSession(): void {
+  try {
+    localStorage.removeItem(MANAGER_SESSION_KEY);
+  } catch (e) {
+    // ignore
+  }
+}
 
 export default function App() {
-  // Estado do Papel / Modo do Utilizador: 'cliente' ou 'gestor'
-  const [currentRole, setCurrentRole] = useState<UserRole>('cliente');
+  // Estado do Papel / Modo do Utilizador: 'cliente' ou 'gestor' (mantém gestor se a sessão de 5 min estiver válida)
+  const [isManagerLoggedIn, setIsManagerLoggedIn] = useState<boolean>(() => {
+    return isManagerSessionValid();
+  });
+  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
+    return isManagerSessionValid() ? 'gestor' : 'cliente';
+  });
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState<boolean>(() => {
+    if (isManagerSessionValid()) return false;
     return !localStorage.getItem(ROLE_CHOSEN_KEY);
   });
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isManagerLoggedIn, setIsManagerLoggedIn] = useState(false);
 
   // Configurações do Site (Moeda, Logótipo, WhatsApp, Logística)
   const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => {
@@ -263,31 +303,87 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Monitorização de Inatividade (Rolling Session):
+  // A sessão de 5 minutos renova-se automaticamente enquanto houver atividade no site (cliques, escrita, navegação, alterações)
+  useEffect(() => {
+    if (!isManagerLoggedIn) return;
+
+    let lastRenew = Date.now();
+
+    const handleUserActivity = () => {
+      const now = Date.now();
+      // Throttle de 10s para não sobrecarregar o localStorage a cada pixel do rato
+      if (now - lastRenew > 10000) {
+        lastRenew = now;
+        setManagerSession();
+      }
+    };
+
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach((ev) => window.addEventListener(ev, handleUserActivity, { passive: true }));
+
+    // Verifica periodicamente se decorreram 5 minutos consecutivos SEM nenhuma atividade
+    const timer = setInterval(() => {
+      if (!isManagerSessionValid()) {
+        clearManagerSession();
+        setIsManagerLoggedIn(false);
+        setCurrentRole('cliente');
+        setToastMessage('Sessão encerrada por inatividade (5 minutos sem atividade).');
+        setTimeout(() => setToastMessage(null), 3500);
+      }
+    }, 5000);
+
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, handleUserActivity));
+      clearInterval(timer);
+    };
+  }, [isManagerLoggedIn]);
+
   // Handlers de Seleção de Papel / Modo
   const handleSelectRole = (role: UserRole) => {
     localStorage.setItem(ROLE_CHOSEN_KEY, 'true');
     setIsWelcomeModalOpen(false);
 
     if (role === 'cliente') {
-      setIsManagerLoggedIn(false); // Sempre desfaz autenticação ao passar para modo cliente
+      clearManagerSession();
+      setIsManagerLoggedIn(false);
       setCurrentRole('cliente');
       setToastMessage('Acedeu como Cliente. Boas compras!');
       setTimeout(() => setToastMessage(null), 2500);
     } else {
-      // Gestor SEMPRE requer a senha do gestor ao aceder
+      if (isManagerSessionValid()) {
+        setIsManagerLoggedIn(true);
+        setCurrentRole('gestor');
+        setToastMessage('Acedeu como Gestor (sessão ativa).');
+        setTimeout(() => setToastMessage(null), 2500);
+      } else {
+        setIsLoginModalOpen(true);
+      }
+    }
+  };
+
+  const handleOpenRoleSwitcher = () => {
+    if (isManagerSessionValid()) {
+      setIsManagerLoggedIn(true);
+      setCurrentRole('gestor');
+      setToastMessage('Sessão de Gestor ativa.');
+      setTimeout(() => setToastMessage(null), 2500);
+    } else {
       setIsLoginModalOpen(true);
     }
   };
 
   const handleLoginSuccess = () => {
+    setManagerSession();
     setIsManagerLoggedIn(true);
     setIsLoginModalOpen(false);
     setCurrentRole('gestor');
-    setToastMessage('Sessão iniciada como Gestor DUOTEC');
+    setToastMessage('Sessão iniciada como Gestor DUOTEC (válida por 5 min)');
     setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleLogoutManager = () => {
+    clearManagerSession();
     setIsManagerLoggedIn(false);
     setCurrentRole('cliente');
     setToastMessage('Sessão de gestor terminada.');
@@ -518,6 +614,7 @@ export default function App() {
           orders={orders}
           onUpdateOrderStatus={handleUpdateOrderStatus}
           onSwitchToClient={() => {
+            clearManagerSession();
             setIsManagerLoggedIn(false);
             setCurrentRole('cliente');
             setToastMessage('Modo Cliente ativado. A senha de gestor será requerida ao voltar.');
@@ -543,7 +640,7 @@ export default function App() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             currentRole={currentRole}
-            onOpenRoleSwitcher={() => setIsLoginModalOpen(true)}
+            onOpenRoleSwitcher={handleOpenRoleSwitcher}
             siteConfig={siteConfig}
           />
 
