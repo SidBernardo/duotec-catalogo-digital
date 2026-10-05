@@ -2154,13 +2154,9 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
                       className="w-12 h-12 object-contain rounded border border-slate-100 bg-slate-50 p-1"
                       onError={() => setEditImagePreview(null)}
                     />
-                    <button
-                      type="button"
-                      onClick={() => { setEditImagePreview(null); setEditProductImage(''); }}
-                      className="text-[10px] text-red-600 hover:text-red-700 font-semibold cursor-pointer"
-                    >
-                      Remover imagem
-                    </button>
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      Imagem atual do componente
+                    </span>
                   </div>
                 )}
                 <label className="flex items-center justify-center gap-2 p-2.5 border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-lg bg-white hover:bg-blue-50/50 cursor-pointer transition-colors text-slate-600 hover:text-blue-600">
